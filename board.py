@@ -5,6 +5,8 @@ import numpy
 from cell import Cell
 
 def exclude(locs, excluded):
+    if type(excluded) is not list:
+        excluded = [excluded]
     return list(filter(lambda loc: loc not in excluded, locs))
 
 class SudokuBoard:
@@ -41,25 +43,26 @@ class SudokuBoard:
         else:
             raise StopIteration
 
-    def get_row(self, row):
-        return [(row, col) for col in range(self.size)]
+    def get_row(self, row, excluded=[]):
+        return exclude([(row, col) for col in range(self.size)], excluded)
 
-    def get_col(self, col):
-        return [(row, col) for row in range(self.size)]
+    def get_col(self, col, excluded=[]):
+        return exclude([(row, col) for row in range(self.size)], excluded)
 
-    def get_square(self, idx):
+    def get_square(self, idx, excluded=[]):
         row = idx // self.small_size
         col = idx % self.small_size
-        return [(self.small_size * row + i // self.small_size,
-                 self.small_size * col + i % self.small_size) for i in range(self.size)]
+        square = [(self.small_size * row + i // self.small_size,
+                   self.small_size * col + i % self.small_size) for i in range(self.size)]
+        return exclude(square, excluded)
 
-    def get_square_row(self, idx, row):
+    def get_square_row(self, idx, row, excluded=[]):
         square = self.get_square(idx)
-        return [square[row * self.small_size + i] for i in range(self.small_size)]
+        return exclude([square[row * self.small_size + i] for i in range(self.small_size)], excluded)
 
-    def get_square_col(self, idx, col):
+    def get_square_col(self, idx, col, excluded=[]):
         square = self.get_square(idx)
-        return [square[i * self.small_size + col] for i in range(self.small_size)]
+        return exclude([square[i * self.small_size + col] for i in range(self.small_size)], excluded)
 
     def get_filled(self, locs):
         return list(filter(lambda loc: Cell.is_filled(self.get_cell(loc)), locs))
@@ -121,13 +124,13 @@ class SmartSudokuBoard(SudokuBoard):
     def set_cell(self, loc, value):
         super().set_cell(loc, value)
 
-        row_locs = exclude(self.get_row(loc[0]), [loc])
+        row_locs = self.get_row(loc[0], excluded=loc)
         self.__remove_candidate(row_locs, value)
 
-        col_locs = exclude(self.get_col(loc[1]), [loc])
+        col_locs = self.get_col(loc[1], excluded=loc)
         self.__remove_candidate(col_locs, value)
 
-        square_locs = exclude(self.get_square(self.loc_to_square_idx(loc)), [loc])
+        square_locs = self.get_square(self.loc_to_square_idx(loc), excluded=loc)
         self.__remove_candidate(square_locs, value)
 
     def clear_cell(self, loc):
@@ -142,12 +145,12 @@ class SmartSudokuBoard(SudokuBoard):
             self.__remove_candidate([loc], num)
 
         # Add value back to candidate lists for rows, column, and square.
-        row_locs = exclude(self.get_row(loc[0]), [loc])
+        row_locs = self.get_row(loc[0], excluded=loc)
         self.__add_candidate(row_locs, value)
 
-        col_locs = exclude(self.get_col(loc[1]), [loc])
+        col_locs = self.get_col(loc[1], excluded=loc)
         self.__add_candidate(col_locs, value)
 
-        square_locs = exclude(self.get_square(self.loc_to_square_idx(loc)), [loc])
+        square_locs = self.get_square(self.loc_to_square_idx(loc), excluded=loc)
         self.__add_candidate(square_locs, value)
 

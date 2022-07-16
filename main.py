@@ -191,9 +191,9 @@ def main():
     med_board = SmartSudokuBoard(array_to_dict(med))
     hard_board = SmartSudokuBoard(array_to_dict(hard))
 
-    board = hard_board
-    # SudokuSolver.fast_solve(board)
-    SudokuSolver.slow_solve(board)
+    board = med_board
+    SudokuSolver.fast_solve(board)
+    # SudokuSolver.slow_solve(board)
     print(board)
 
 if __name__ == "__main__":
