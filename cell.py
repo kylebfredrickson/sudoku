@@ -1,19 +1,11 @@
-# class CellSetException(Exception):
-#     def __init__(self):
-#         super().__init__("Filled cells cannot be set.")
-
-# class CellClearException(Exception):
-#     def __init__(self):
-#         super().__init__("Unfilled cells cannot be cleared.")
-
 class Cell:
-    def is_filled(cell):
-        return cell.value is not None
-
     def __init__(self, size):
         self.size = size
         self.value = None
         self.candidates = set([x for x in range(1, size + 1)])
+
+    def is_filled(self):
+        return self.value is not None
 
     def set(self, num):
         self.value = num
