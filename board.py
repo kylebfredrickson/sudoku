@@ -67,6 +67,9 @@ class SudokuBoard:
     def get_filled(self, locs):
         return list(filter(lambda loc: self.get_cell(loc).is_filled(), locs))
 
+    def get_unfilled(self, locs):
+        return list(filter(lambda loc: not self.get_cell(loc).is_filled(), locs))
+
     def is_filled(self):
         for loc in self:
             if not self.get_cell(loc).is_filled():
@@ -117,10 +120,6 @@ class SmartSudokuBoard(SudokuBoard):
         for loc in locs:
             self.get_cell(loc) - candidate
 
-    def __add_candidate(self, locs, candidate):
-        for loc in locs:
-            self.get_cell(loc) + candidate
-
     def set_cell(self, loc, value):
         super().set_cell(loc, value)
 
@@ -132,25 +131,3 @@ class SmartSudokuBoard(SudokuBoard):
 
         square_locs = self.get_square(self.loc_to_square_idx(loc), excluded=loc)
         self.remove_candidate(square_locs, value)
-
-    # Possible that there is a bug here.
-    def clear_cell(self, loc):
-        value = self.get_cell(loc).value
-        super().clear_cell(loc)
-
-        # Remove known values from candidate list.
-        nums = [self.get_cell(loc).value for loc in self.get_filled(self.get_row(loc[0]))]
-        nums.extend([self.get_cell(loc).value for loc in self.get_filled(self.get_col(loc[1]))])
-        nums.extend([self.get_cell(loc).value for loc in self.get_filled(self.get_square(self.loc_to_square_idx(loc)))])
-        for num in list(set(nums)):
-            self.remove_candidate([loc], num)
-
-        # Add value back to candidate lists for rows, column, and square.
-        row_locs = self.get_row(loc[0], excluded=loc)
-        self.__add_candidate(row_locs, value)
-
-        col_locs = self.get_col(loc[1], excluded=loc)
-        self.__add_candidate(col_locs, value)
-
-        square_locs = self.get_square(self.loc_to_square_idx(loc), excluded=loc)
-        self.__add_candidate(square_locs, value)

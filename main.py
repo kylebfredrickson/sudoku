@@ -1,5 +1,5 @@
-from statistics import median
 import time
+from itertools import combinations
 
 from board import Cell, SmartSudokuBoard
 
@@ -29,7 +29,19 @@ class SudokuSolver:
         return list(filter(lambda loc: not board.get_cell(loc).is_filled(), locs))
 
     # Technique 0: Brute Force
+    def is_valid(board, loc, num):
+        if num in [board.get_cell(loc).value for loc in board.get_filled(board.get_row(loc[0], excluded=loc))]:
+            return False
+        elif num in [board.get_cell(loc).value for loc in board.get_filled(board.get_col(loc[1], excluded=loc))]:
+            return False
+        elif num in [board.get_cell(loc).value for loc in board.get_filled(board.get_square(board.loc_to_square_idx(loc), excluded=loc))]:
+            return False
+        else:
+            return True
+
     def backtrack(board, idx=0):
+        print(idx)
+        print(board)
         if idx == board.max:
             return True
         else:
@@ -38,12 +50,13 @@ class SudokuSolver:
             if Cell.is_filled(cell):
                 return SudokuSolver.backtrack(board, idx + 1)
             else:
-                for candidate in cell.candidates:
-                    board.set_cell(loc, candidate)
-                    if SudokuSolver.backtrack(board, idx + 1):
-                        return True
-                    else:
-                        board.clear_cell(loc)
+                for num in range(1, board.size + 1):
+                    if SudokuSolver.is_valid(board, loc, num):
+                        board.set_cell(loc, num)
+                        if SudokuSolver.backtrack(board, idx + 1):
+                            return True
+                        else:
+                            board.clear_cell(loc)
                 return False
 
     # Technique 1: Set cells with a single candidate.
@@ -111,6 +124,26 @@ class SudokuSolver:
                 SudokuSolver.remove_unique_in_square_row(board, i, num)
                 SudokuSolver.remove_unique_in_square_col(board, i, num)
 
+    # Technique 4:
+    def remove_complete_permutation(board, locs, size):
+        if size < len(locs):
+            indices = [i for i in range(len(locs))]
+            for idx_subset in combinations(indices, size):
+                vals = set()
+                for idx in idx_subset:
+                    vals = vals.union(board.get_cell(locs[idx]).candidates)
+                if len(vals) == size:
+                    for idx in list(set(indices).difference(idx_subset)):
+                        for val in vals:
+                            board.remove_candidate([locs[idx]], val)
+
+    def remove_all_complete_permutations(board):
+        for i in range(board.size):
+            for size in range(1,board.size + 1):
+                SudokuSolver.remove_complete_permutation(board, board.get_unfilled(board.get_row(i)), size)
+                SudokuSolver.remove_complete_permutation(board, board.get_unfilled(board.get_col(i)), size)
+                SudokuSolver.remove_complete_permutation(board, board.get_unfilled(board.get_square(i)), size)
+
     def solve(board, backtrack=False):
         start = time.time()
         i = 0
@@ -124,6 +157,7 @@ class SudokuSolver:
                 SudokuSolver.set_one_remaining(board)
                 SudokuSolver.set_all_unique(board)
                 SudokuSolver.remove_all_unique_in_row_col(board)
+                SudokuSolver.remove_all_complete_permutations(board)
 
             i += 1
 
@@ -137,61 +171,20 @@ class SudokuSolver:
         else:
             print(f"Failed. {SudokuSolver.count_possibilities(board)} possibilities.")
 
-    def slow_solve(board):
-        start = time.time()
-        solvable = SudokuSolver.backtrack(board)
-        time_to_solve = time.time() - start
-        if solvable:
-            print(f"Solved in {time_to_solve:.5f}s.")
-        else:
-            print(f"Failed.")
-
 def main():
-    easy = [[0, 0, 2, 0, 3, 1, 9, 4, 0],
-            [0, 8, 0, 9, 6, 0, 3, 0, 0],
-            [0, 1, 3, 0, 0, 0, 6, 0, 2],
-            [1, 7, 0, 0, 0, 6, 4, 0, 0],
-            [3, 0, 0, 5, 4, 8, 0, 6, 0],
-            [6, 0, 0, 0, 0, 0, 2, 9, 8],
-            [0, 0, 4, 3, 7, 5, 0, 0, 0],
-            [7, 0, 0, 1, 0, 0, 0, 3, 9],
-            [0, 3, 1, 0, 8, 0, 0, 0, 4],
-           ]
+    b = [[8, 7, 0, 0, 1, 0, 9, 5, 4],
+         [0, 6, 0, 0, 0, 7, 8, 1, 3],
+         [0, 0, 0, 0, 0, 0, 6, 2, 7],
+         [0, 0, 7, 0, 0, 1, 5, 0, 2],
+         [0, 0, 0, 0, 2, 0, 0, 8, 0],
+         [5, 0, 0, 0, 0, 0, 0, 3, 0],
+         [9, 0, 0, 0, 4, 0, 1, 0, 5],
+         [0, 0, 8, 9, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 3, 0, 0],
+        ]
 
-    med = [[0, 0, 0, 0, 6, 0, 2, 0, 0],
-           [8, 0, 0, 0, 0, 5, 0, 0, 0],
-           [0, 0, 0, 7, 2, 8, 0, 0, 0],
-           [0, 7, 0, 0, 0, 2, 0, 8, 0],
-           [0, 0, 0, 0, 3, 0, 0, 4, 0],
-           [1, 0, 2, 4, 5, 0, 0, 6, 0],
-           [0, 3, 1, 0, 0, 0, 0, 0, 0],
-           [0, 0, 4, 0, 0, 0, 3, 0, 9],
-           [5, 0, 0, 0, 0, 0, 4, 0, 0],
-          ]
+    board = SmartSudokuBoard(array_to_dict(b))
 
-    hard = [[0, 3, 0, 0, 0, 0, 0, 4, 0],
-            [0, 0, 0, 0, 3, 8, 0, 6, 0],
-            [8, 0, 0, 0, 0, 7, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0, 9],
-            [4, 6, 0, 0, 9, 0, 0, 3, 2],
-            [0, 0, 0, 2, 0, 0, 0, 7, 1],
-            [0, 5, 0, 0, 1, 3, 0, 0, 0],
-            [0, 0, 4, 0, 0, 0, 5, 0, 0],
-            [0, 0, 9, 0, 0, 4, 0, 0, 0],
-           ]
-
-    little = [[1, 0, 0, 0],
-              [0, 0, 0, 0],
-              [0, 0, 0, 0],
-              [0, 0, 0, 0],
-             ]
-
-    little_board = SmartSudokuBoard(array_to_dict(little), 4)
-    easy_board = SmartSudokuBoard(array_to_dict(easy))
-    med_board = SmartSudokuBoard(array_to_dict(med))
-    hard_board = SmartSudokuBoard(array_to_dict(hard))
-
-    board = med_board
     SudokuSolver.solve(board, backtrack=False)
     print(board)
 
