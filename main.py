@@ -40,8 +40,6 @@ class SudokuSolver:
             return True
 
     def backtrack(board, idx=0):
-        print(idx)
-        print(board)
         if idx == board.max:
             return True
         else:
@@ -160,8 +158,10 @@ class SudokuSolver:
                 SudokuSolver.remove_all_complete_permutations(board)
 
             i += 1
+            if board == old_board:
+                backtrack = True
 
-            if not board.is_legal() or board == old_board or board.is_solved():
+            if not board.is_legal() or board.is_solved():
                 break
 
         time_to_solve = time.time() - start
