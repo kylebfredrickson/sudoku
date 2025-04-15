@@ -1,7 +1,11 @@
-import time
 from itertools import combinations
+import numpy
+import sys
+import time
 
 from board import Cell, SmartSudokuBoard
+
+SIZE = 9
 
 def print_row(row):
     row = "".join([str(cell) for cell in row])
@@ -28,7 +32,6 @@ class SudokuSolver:
     def get_unfilled(board, locs):
         return list(filter(lambda loc: not board.get_cell(loc).is_filled(), locs))
 
-    # Technique 0: Brute Force
     def is_valid(board, loc, num):
         if num in [board.get_cell(loc).value for loc in board.get_filled(board.get_row(loc[0], excluded=loc))]:
             return False
@@ -39,6 +42,7 @@ class SudokuSolver:
         else:
             return True
 
+    # Technique 0: Brute Force
     def backtrack(board, idx=0):
         if idx == board.max:
             return True
@@ -171,22 +175,24 @@ class SudokuSolver:
         else:
             print(f"Failed. {SudokuSolver.count_possibilities(board)} possibilities.")
 
-def main():
-    b = [[8, 7, 0, 0, 1, 0, 9, 5, 4],
-         [0, 6, 0, 0, 0, 7, 8, 1, 3],
-         [0, 0, 0, 0, 0, 0, 6, 2, 7],
-         [0, 0, 7, 0, 0, 1, 5, 0, 2],
-         [0, 0, 0, 0, 2, 0, 0, 8, 0],
-         [5, 0, 0, 0, 0, 0, 0, 3, 0],
-         [9, 0, 0, 0, 4, 0, 1, 0, 5],
-         [0, 0, 8, 9, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 3, 0, 0],
-        ]
+def main(argv): 
+    if len(argv) < 2:
+        print("Enter the sudoku board.")
+        return
 
-    board = SmartSudokuBoard(array_to_dict(b))
+    if not len(argv[1]) == SIZE*SIZE:
+        print(f"Board must be of size ({SIZE}, {SIZE}).")
+        return
+
+    if not argv[1].isdigit():
+        print("Board must be numeric.")
+        return
+
+    b = numpy.array([int(ch) for ch in argv[1]], dtype=int)
+    board = SmartSudokuBoard(array_to_dict(b.reshape((SIZE, SIZE))))
 
     SudokuSolver.solve(board, backtrack=False)
     print(board)
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
